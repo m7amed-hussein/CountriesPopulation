@@ -13,26 +13,27 @@ namespace CountriesPopulation.Api.Repositories
         {
             _dbContext = dbContext;
         }
-        public async void  AddMany(List<Country> data)
+        public async Task  AddManyAsync(List<Country> countries)
         {
-            await _dbContext.Set<Country>().AddRangeAsync(data);
+            await _dbContext.Set<Country>().AddRangeAsync(countries);
             _dbContext.SaveChanges();
         }
-        public void Add(Country data)
+        public async Task AddAsync(Country country)
         {
-            _dbContext.Set<Country>().Add(data);
-            _dbContext.SaveChanges();
+            await _dbContext.Set<Country>().AddAsync(country);
         }
-        public async Task Update(Country data)
+        public async Task SaveChangesAsync(){
+            await _dbContext.SaveChangesAsync();
+        }
+        public async Task UpdateAsync(Country country)
         {
-            var country = await _dbContext.Countries.Include(c=>c.PopulationCount).FirstOrDefaultAsync(c => c.Name == data.Name);
-            if(country == null)
-                return;
-            country.Name = data.Name;
-            country.Code = data.Code;
-            country.Iso3 = data.Iso3;
-            UpdatePopulation(country, data.PopulationCount);
-            _dbContext.SaveChanges();
+            var countryEntity = await _dbContext.Countries.Include(c=>c.PopulationCount).FirstOrDefaultAsync(c => c.Id == country.Id);
+            if(countryEntity == null)
+                throw new EntityNotFoundException();
+            countryEntity.Name = country.Name;
+            countryEntity.Code = country.Code;
+            countryEntity.Iso3 = country.Iso3;
+            UpdatePopulation(countryEntity, country.PopulationCount);
         }
         private void UpdatePopulation(Country country, List<Population> population)
         {
@@ -45,28 +46,26 @@ namespace CountriesPopulation.Api.Repositories
                 _dbContext.Populations.Remove(pop);
             }
             }
-            
             foreach(var pop in population)
             {
                 pop.CountryId = country.Id;
                 _dbContext.Populations.Add(pop);
             }
-            _dbContext.SaveChanges();
 
         }
-        public async Task<List<Country>> GetPagedList(int page)
+        public async Task<List<Country>> GetPagedListAsync(int page)
         {
             return  await ( _dbContext.Countries.Include(c =>c.PopulationCount).AsNoTracking().Skip((page - 1) * 50).Take(50).ToListAsync());
         }
-        public async Task<List<Country>> GetList()
+        public async Task<List<Country>> GetListAsync()
         {
             return  await ( _dbContext.Countries.Include(c =>c.PopulationCount).AsNoTracking().ToListAsync());
         }
-        public async Task<Country> Get(Guid id)
+        public async Task<Country> GetAsync(Guid id)
         {
             return await _dbContext.Countries.Include(c => c.PopulationCount).FirstOrDefaultAsync(c => c.Id == id);
         }
-        public async Task<Country> Get(string search)
+        public async Task<Country> GetAsync(string search)
         {
             return await _dbContext.Countries.Include(c => c.PopulationCount).FirstOrDefaultAsync(c => c.Name == search || c.Code == search);
         }
