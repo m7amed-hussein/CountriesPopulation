@@ -9,9 +9,6 @@ namespace CountriesPopulation.Api.Models
         public string Iso3 { get; set; }
 
         public List<Population> PopulationCount { get; set; }
-        public Country()
-        {
-        }
     }
 }
 
